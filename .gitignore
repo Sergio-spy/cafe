@@ -1,0 +1,31 @@
+# Base de datos (datos del servidor — no versionar)
+cafe.db
+cafe.db-journal
+cafe.db-wal
+cafe.db-shm
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Variables de entorno / configs locales
+.env
+.env.local
+config.local.php
+
+# macOS
+.DS_Store
+._*
+
+# Editores / herramientas
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+
+# Backups
+*.bak
+*.orig
+*~

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fondo -->
+  <rect width="512" height="512" rx="100" fill="#1a1710"/>
+  <!-- Taza -->
+  <rect x="136" y="220" width="210" height="160" rx="16" fill="#d4872a"/>
+  <!-- Cuerpo taza interior -->
+  <rect x="150" y="234" width="182" height="132" rx="10" fill="#f0a842"/>
+  <!-- Asa -->
+  <path d="M346 255 Q410 255 410 310 Q410 365 346 365" fill="none" stroke="#d4872a" stroke-width="28" stroke-linecap="round"/>
+  <!-- Vapor izquierdo -->
+  <path d="M196 200 Q186 175 196 150 Q206 125 196 100" fill="none" stroke="#f0a842" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
+  <!-- Vapor centro -->
+  <path d="M241 200 Q231 170 241 140 Q251 110 241 80" fill="none" stroke="#f0a842" stroke-width="14" stroke-linecap="round" opacity="0.85"/>
+  <!-- Vapor derecho -->
+  <path d="M286 200 Q276 175 286 150 Q296 125 286 100" fill="none" stroke="#f0a842" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
+  <!-- Platillo -->
+  <ellipse cx="241" cy="392" rx="130" ry="18" fill="#d4872a"/>
+</svg>

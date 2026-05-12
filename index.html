@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0d0b">
+<title>Café ☕</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Café">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg:       #0f0d0b;
+  --bg2:      #1a1710;
+  --bg3:      #242018;
+  --bg4:      #2e2a20;
+  --line:     rgba(255,255,255,0.07);
+  --line2:    rgba(255,255,255,0.13);
+  --text:     #f0ebe2;
+  --text2:    #a09880;
+  --text3:    #6b6252;
+  --amber:    #d4872a;
+  --amber2:   #f0a842;
+  --amber-bg: rgba(212,135,42,0.12);
+  --amber-bg2:rgba(212,135,42,0.22);
+  --green:    #5a9e6f;
+  --green-bg: rgba(90,158,111,0.12);
+  --red:      #c0544a;
+  --red-bg:   rgba(192,84,74,0.12);
+  --blue:     #4a90d9;
+  --blue-bg:  rgba(74,144,217,0.12);
+  --purple:   #9b72db;
+  --purple-bg:rgba(155,114,219,0.12);
+  --teal:     #3dbdb5;
+  --teal-bg:  rgba(61,189,181,0.12);
+  --radius:   16px;
+  --radius-sm:10px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); }
+::-webkit-scrollbar { width: 0; }
+
+#app {
+  max-width: 430px; margin: 0 auto;
+  min-height: 100dvh; display: flex; flex-direction: column;
+  padding-bottom: calc(72px + var(--safe-bot));
+}
+
+/* ── Topbar ────────────────────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  padding: calc(var(--safe-top) + 14px) 20px 14px;
+  background: linear-gradient(to bottom, var(--bg) 80%, transparent);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-title { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); letter-spacing: -0.3px; }
+.topbar-title span { color: var(--amber2); }
+.topbar-refresh {
+  width: 36px; height: 36px; background: var(--bg3); border: 1px solid var(--line2);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text2); font-size: 16px; transition: background 0.15s;
+}
+.topbar-refresh:active { background: var(--bg4); }
+.spin { animation: spin 0.7s linear; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.content { flex: 1; padding: 0 16px; overflow-y: auto; }
+
+/* ── Hero ──────────────────────────────────────────────────────────────── */
+.hero {
+  background: var(--bg3); border: 1px solid var(--line2); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 12px; position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 10% 0%, var(--amber-bg) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); margin-bottom: 10px; }
+.hero-name { font-family: 'DM Serif Display', serif; font-size: 34px; color: var(--text); line-height: 1.1; margin-bottom: 6px; }
+.hero-sub { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
+.hero-sub strong { color: var(--text); font-weight: 500; }
+.hero-no-attendees { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+.btn-primary {
+  display: flex; align-items: center; gap: 8px; justify-content: center;
+  background: var(--amber); color: #1a1208; font-weight: 600; font-size: 15px;
+  padding: 12px 22px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+  width: 100%; transition: background 0.15s, transform 0.1s;
+}
+.btn-primary:active { background: var(--amber2); transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+/* ── Stats ─────────────────────────────────────────────────────────────── */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+.stat-chip { background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center; }
+.stat-chip .val { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); line-height: 1; margin-bottom: 3px; }
+.stat-chip .lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; }
+
+/* ── Section header ────────────────────────────────────────────────────── */
+.section-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-hdr h2 { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+.section-hdr button { font-size: 13px; color: var(--amber); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* ── Person cards ──────────────────────────────────────────────────────── */
+.people-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+.person-card {
+  background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px; transition: background 0.1s;
+}
+.person-card.is-next { border-color: var(--amber); background: var(--amber-bg); }
+.person-card.inactive { opacity: 0.4; }
+
+.avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 14px; flex-shrink: 0; letter-spacing: 0.02em;
+}
+.avatar.c-amber  { background: var(--amber-bg2); color: var(--amber2); }
+.avatar.c-green  { background: var(--green-bg);  color: var(--green); }
+.avatar.c-red    { background: var(--red-bg);    color: var(--red); }
+.avatar.c-blue   { background: var(--blue-bg);   color: var(--blue); }
+.avatar.c-purple { background: var(--purple-bg); color: var(--purple); }
+.avatar.c-teal   { background: var(--teal-bg);   color: var(--teal); }
+
+.person-body { flex: 1; min-width: 0; }
+.person-name { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.badge-next { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: var(--amber); color: #1a1208; padding: 2px 6px; border-radius: 20px; }
+.person-stats { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+.progress-wrap { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 2px; background: var(--amber); transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.person-card.is-next .progress-bar { background: var(--amber2); }
+
+.person-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.icon-btn {
+  width: 32px; height: 32px; background: var(--bg4); border: 1px solid var(--line);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 15px; color: var(--text3); transition: background 0.1s, color 0.1s;
+}
+.icon-btn:active { background: var(--line2); }
+
+/* ── History ───────────────────────────────────────────────────────────── */
+.history-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+.history-item {
+  background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+}
+.h-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+.h-info { flex: 1; min-width: 0; }
+.h-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.h-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.h-right { text-align: right; flex-shrink: 0; }
+.h-amount { font-size: 15px; font-weight: 600; color: var(--amber2); }
+.h-count { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* ── Bottom nav ────────────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; background: var(--bg2); border-top: 1px solid var(--line2);
+  display: flex; padding-bottom: var(--safe-bot); z-index: 100;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 0; cursor: pointer; color: var(--text3); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.05em; text-transform: uppercase; border: none; background: none;
+  transition: color 0.15s;
+}
+.nav-item.active { color: var(--amber2); }
+.nav-item svg { width: 22px; height: 22px; }
+
+/* ── Modal (bottom sheet) ──────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px); display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  width: 100%; max-width: 430px; margin: 0 auto;
+  background: var(--bg2); border: 1px solid var(--line2); border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  padding: 10px 20px calc(24px + var(--safe-bot));
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  max-height: 92dvh; overflow-y: auto;
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--line2); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); margin-bottom: 20px; }
+
+/* ── Form fields ───────────────────────────────────────────────────────── */
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.field input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--line2); border-radius: var(--radius-sm);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 16px;
+  padding: 13px 14px; outline: none; transition: border-color 0.15s;
+}
+.field input:focus { border-color: var(--amber); }
+
+/* ── Attendee grid ─────────────────────────────────────────────────────── */
+.attendee-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.attendee-item {
+  background: var(--bg3); border: 1px solid var(--line2); border-radius: var(--radius-sm);
+  padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+  user-select: none;
+}
+.attendee-item.selected { background: var(--amber-bg2); border-color: var(--amber); }
+.attendee-item .av-sm {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
+}
+.attendee-item .av-name { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.attendee-item .check { font-size: 14px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+.attendee-item.selected .check { opacity: 1; }
+
+/* ── Suggested payer selector ──────────────────────────────────────────── */
+.payer-section { margin-bottom: 18px; }
+.payer-section label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.payer-suggestion {
+  background: var(--amber-bg); border: 1px solid var(--amber); border-radius: var(--radius-sm);
+  padding: 12px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+}
+.payer-suggestion .sug-info { flex: 1; }
+.payer-suggestion .sug-name { font-size: 15px; font-weight: 500; color: var(--text); }
+.payer-suggestion .sug-reason { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.payer-suggestion .sug-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; background: var(--amber); color: #1a1208; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+
+.payer-list { display: flex; flex-direction: column; gap: 6px; }
+.payer-option {
+  background: var(--bg3); border: 1px solid var(--line2); border-radius: var(--radius-sm);
+  padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+}
+.payer-option.selected { background: var(--amber-bg); border-color: var(--amber); }
+.payer-option .p-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--text); }
+.payer-option .p-stats { font-size: 11px; color: var(--text2); }
+.payer-option .p-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color 0.12s; }
+.payer-option.selected .p-radio { border-color: var(--amber); }
+.payer-option.selected .p-radio::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); display: block; }
+
+.divider { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.divider span { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* ── Color picker ──────────────────────────────────────────────────────── */
+.color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.1s, transform 0.1s; }
+.color-dot.selected { border-color: white; transform: scale(1.15); }
+.color-dot.c-amber  { background: var(--amber); }
+.color-dot.c-green  { background: var(--green); }
+.color-dot.c-red    { background: var(--red); }
+.color-dot.c-blue   { background: var(--blue); }
+.color-dot.c-purple { background: var(--purple); }
+.color-dot.c-teal   { background: var(--teal); }
+
+/* ── Modal buttons ─────────────────────────────────────────────────────── */
+.modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+.btn-cancel {
+  flex: 1; background: var(--bg3); border: 1px solid var(--line2); border-radius: var(--radius-sm);
+  color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+  padding: 14px; cursor: pointer; transition: background 0.1s;
+}
+.btn-cancel:active { background: var(--bg4); }
+.btn-confirm {
+  flex: 2; background: var(--amber); border: none; border-radius: var(--radius-sm);
+  color: #1a1208; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+  padding: 14px; cursor: pointer; transition: background 0.1s, transform 0.1s;
+}
+.btn-confirm:active { background: var(--amber2); transform: scale(0.98); }
+.btn-confirm:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; top: calc(var(--safe-top) + 60px);
+  left: 50%; transform: translateX(-50%) translateY(-10px);
+  background: var(--bg4); border: 1px solid var(--line2); border-radius: 30px;
+  padding: 10px 18px; font-size: 13px; color: var(--text); white-space: nowrap;
+  z-index: 300; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Misc ──────────────────────────────────────────────────────────────── */
+.empty { text-align: center; padding: 32px 20px; color: var(--text3); font-size: 14px; line-height: 1.6; }
+.empty .icon { font-size: 36px; margin-bottom: 10px; }
+.skeleton { background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); height: 70px; margin-bottom: 8px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.page { display: none; animation: fadeUp 0.2s ease; }
+.page.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.show-inactive-btn { width: 100%; background: none; border: 1px dashed var(--line2); border-radius: var(--radius-sm); color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 10px; cursor: pointer; margin-bottom: 24px; }
+
+.step-indicator {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 20px;
+}
+.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line2); transition: background 0.2s; }
+.step-dot.active { background: var(--amber); width: 22px; border-radius: 4px; }
+.step-dot.done { background: var(--amber2); }
+.step-label { font-size: 12px; color: var(--text2); margin-left: 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">café <span>☕</span></div>
+    <button class="topbar-refresh" id="refresh-btn" onclick="loadData()" title="Actualizar">↻</button>
+  </div>
+
+  <div class="content">
+    <!-- INICIO -->
+    <div class="page active" id="page-home">
+      <div id="hero-section"></div>
+      <div class="stats-row" id="stats-row">
+        <div class="skeleton" style="height:70px"></div>
+        <div class="skeleton" style="height:70px"></div>
+        <div class="skeleton" style="height:70px"></div>
+      </div>
+      <div class="section-hdr">
+        <h2>Últimos pagos</h2>
+        <button onclick="switchPage('historial')">Ver todo →</button>
+      </div>
+      <div id="recent-list" class="history-list"></div>
+    </div>
+
+    <!-- PERSONAS -->
+    <div class="page" id="page-personas">
+      <div class="section-hdr" style="margin-bottom:14px">
+        <h2>Miembros del grupo</h2>
+        <button onclick="openAddPersonModal()">+ Añadir</button>
+      </div>
+      <div id="people-list" class="people-list"></div>
+      <button class="show-inactive-btn" id="toggle-inactive-btn" onclick="toggleInactive()" style="display:none">Mostrar dados de baja</button>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="page" id="page-historial">
+      <div class="section-hdr" style="margin-bottom:14px">
+        <h2>Historial de pagos</h2>
+      </div>
+      <div id="full-history" class="history-list"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-home" onclick="switchPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      Inicio
+    </button>
+    <button class="nav-item" id="nav-personas" onclick="switchPage('personas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+      Personas
+    </button>
+    <button class="nav-item" id="nav-historial" onclick="switchPage('historial')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      Historial
+    </button>
+  </nav>
+</div>
+
+<!-- ── MODAL: Registrar ronda (3 pasos) ──────────────────────────────────── -->
+<div class="modal-overlay" id="modal-pay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <!-- Paso 1: seleccionar asistentes -->
+    <div id="step-1">
+      <div class="step-indicator">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+        <span class="step-label">¿Quién ha venido hoy?</span>
+      </div>
+      <div class="modal-title">Selecciona asistentes</div>
+      <div class="field">
+        <div class="attendee-grid" id="attendee-grid"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('modal-pay')">Cancelar</button>
+        <button class="btn-confirm" id="btn-step1-next" onclick="goStep(2)">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- Paso 2: confirmar quién paga -->
+    <div id="step-2" style="display:none">
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <span class="step-label">¿Quién paga?</span>
+      </div>
+      <div class="modal-title">¿Quién invita?</div>
+
+      <div class="payer-section">
+        <label>Sugerencia</label>
+        <div id="payer-suggestion"></div>
+        <div class="divider"><span>o elige otro</span></div>
+        <div class="payer-list" id="payer-list"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="goStep(1)">← Atrás</button>
+        <button class="btn-confirm" id="btn-step2-next" onclick="goStep(3)">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- Paso 3: importe -->
+    <div id="step-3" style="display:none">
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <span class="step-label">Importe de la ronda</span>
+      </div>
+      <div class="modal-title">¿Cuánto ha costado?</div>
+      <div class="field">
+        <label>Importe total (€)</label>
+        <input type="number" id="pay-amount" placeholder="4.80" step="0.10" min="0.10" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Nota (opcional)</label>
+        <input type="text" id="pay-note" placeholder="Con bollería…" maxlength="80">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="goStep(2)">← Atrás</button>
+        <button class="btn-confirm" onclick="submitPay()">Confirmar pago ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Añadir persona ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-add-person">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo miembro</div>
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="new-person-name" placeholder="Nombre…" maxlength="40">
+    </div>
+    <div class="field">
+      <label>Color</label>
+      <div class="color-picker" id="color-picker">
+        <div class="color-dot c-amber selected"  data-color="c-amber"  onclick="selectColor(this)"></div>
+        <div class="color-dot c-green"            data-color="c-green"  onclick="selectColor(this)"></div>
+        <div class="color-dot c-red"              data-color="c-red"    onclick="selectColor(this)"></div>
+        <div class="color-dot c-blue"             data-color="c-blue"   onclick="selectColor(this)"></div>
+        <div class="color-dot c-purple"           data-color="c-purple" onclick="selectColor(this)"></div>
+        <div class="color-dot c-teal"             data-color="c-teal"   onclick="selectColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-add-person')">Cancelar</button>
+      <button class="btn-confirm" onclick="submitAddPerson()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Confirmar borrado con contraseña ────────────────────────────── -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Borrar pago</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6">
+      Introduce la contraseña de administrador para eliminar este pago.
+    </p>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="delete-password-input" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter') confirmDeletePayment()">
+    </div>
+    <p id="delete-error" style="display:none;font-size:13px;color:var(--red);margin-bottom:14px;margin-top:-8px">
+      Contraseña incorrecta
+    </p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-delete')">Cancelar</button>
+      <button class="btn-confirm" style="background:var(--red);color:#fff" onclick="confirmDeletePayment()">Borrar pago</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const API_BASE = 'api.php';
+const TOKEN    = 'token_cafe_mrcoach';
+
+// ── Estado global ───────────────────────────────────────────────────────────
+let state = { people: [], next_payer: null, recent_payments: [], avg_round: 0, rounds_total: 0, total_spent: 0 };
+let showInactive   = false;
+let selectedColor  = 'c-amber';
+
+// Estado del modal de pago (3 pasos)
+let payState = {
+  step:        1,
+  attendeeIds: new Set(),   // IDs seleccionados en paso 1
+  payerId:     null,        // ID del pagador elegido en paso 2
+  suggested:   null,        // persona sugerida por el algoritmo
+};
+
+// ── API ─────────────────────────────────────────────────────────────────────
+async function api(method, endpoint, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'X-Token': TOKEN } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${API_BASE}/${endpoint}`, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ── Carga de datos ──────────────────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spin');
+  try {
+    state = await api('GET', 'stats');
+    render();
+  } catch(e) {
+    showToast('Error cargando datos ⚠️');
+  } finally {
+    setTimeout(() => btn.classList.remove('spin'), 600);
+  }
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+function render() {
+  renderHero();
+  renderStats();
+  renderRecentPayments();
+  renderPeople();
+  renderFullHistory();
+}
+
+function initials(name) {
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr.replace(' ', 'T') + 'Z');
+  const diff = Math.floor((new Date() - d) / 86400000);
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  if (diff < 7)  return `Hace ${diff} días`;
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function formatEur(n) { return Number(n).toFixed(2).replace('.', ',') + ' €'; }
+
+function renderHero() {
+  const sec = document.getElementById('hero-section');
+  const active = state.people.filter(p => p.active == 1);
+  if (!active.length) {
+    sec.innerHTML = `<div class="hero"><div class="hero-no-attendees">Añade personas al grupo para empezar.</div></div>`;
+    return;
+  }
+  sec.innerHTML = `
+    <div class="hero">
+      <div class="hero-label">☕ ¿Quién invita hoy?</div>
+      <div class="hero-name" style="font-size:22px;margin-bottom:10px">Selecciona quién ha venido<br>y la app decide el turno</div>
+      <button class="btn-primary" onclick="openPayModal()">
+        <span>Registrar ronda de hoy</span><span>→</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderStats() {
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-chip">
+      <div class="val">${state.rounds_total}</div>
+      <div class="lbl">Rondas</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val">${formatEur(state.total_spent).replace(' €','')}<span style="font-size:14px;color:var(--text3)"> €</span></div>
+      <div class="lbl">Total</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val">${formatEur(state.avg_round).replace(' €','')}<span style="font-size:14px;color:var(--text3)"> €</span></div>
+      <div class="lbl">Media</div>
+    </div>
+  `;
+}
+
+function renderRecentPayments() {
+  const list = document.getElementById('recent-list');
+  const items = state.recent_payments.slice(0, 5);
+  if (!items.length) {
+    list.innerHTML = `<div class="empty"><div class="icon">📋</div>Sin pagos registrados aún.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(p => {
+    const attendeeText = p.attendees && p.attendees.length
+      ? `${p.attendees.length} persona${p.attendees.length !== 1 ? 's' : ''}`
+      : '';
+    return `
+      <div class="history-item">
+        <div class="h-avatar avatar ${p.color}">${initials(p.name)}</div>
+        <div class="h-info">
+          <div class="h-name">${p.name}</div>
+          <div class="h-meta">${formatDate(p.paid_at)}${attendeeText ? ' · ' + attendeeText : ''}${p.note ? ' · ' + p.note : ''}</div>
+        </div>
+        <div class="h-right" style="display:flex;align-items:center;gap:10px">
+          <div>
+            <div class="h-amount">${formatEur(p.amount)}</div>
+          </div>
+          <button class="icon-btn del" title="Borrar pago" onclick="deletePayment(${p.id}, '${p.name}')">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPeople() {
+  const list = document.getElementById('people-list');
+  const toggleBtn = document.getElementById('toggle-inactive-btn');
+  const active   = state.people.filter(p => p.active == 1);
+  const inactive = state.people.filter(p => p.active == 0);
+  const maxScore = Math.max(...active.map(p => p.score), 0.01);
+  const sorted   = [...active].sort((a, b) => a.score - b.score);
+
+  let html = sorted.map(p => {
+    const isNext = state.next_payer && p.id === state.next_payer.id;
+    const pct    = Math.round((p.score / maxScore) * 100);
+    return `
+      <div class="person-card ${isNext ? 'is-next' : ''}">
+        <div class="avatar ${p.color}">${initials(p.name)}</div>
+        <div class="person-body">
+          <div class="person-name">${p.name}${isNext ? '<span class="badge-next">global</span>' : ''}</div>
+          <div class="person-stats">${p.times} ronda${p.times !== 1 ? 's' : ''} · ${formatEur(p.total)}</div>
+          <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+        </div>
+        <div class="person-actions">
+          <button class="icon-btn" title="Dar de baja" onclick="deactivatePerson(${p.id},'${p.name}')">−</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (showInactive && inactive.length) {
+    html += inactive.map(p => `
+      <div class="person-card inactive">
+        <div class="avatar ${p.color}">${initials(p.name)}</div>
+        <div class="person-body">
+          <div class="person-name">${p.name} <span style="font-size:11px;color:var(--text3)">(baja)</span></div>
+          <div class="person-stats">${p.times} ronda${p.times !== 1 ? 's' : ''} · ${formatEur(p.total)}</div>
+        </div>
+        <div class="person-actions">
+          <button class="icon-btn" title="Reactivar" onclick="reactivatePerson(${p.id})">+</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  list.innerHTML = html || `<div class="empty"><div class="icon">👥</div>Añade personas al grupo.</div>`;
+
+  if (inactive.length) {
+    toggleBtn.style.display = '';
+    toggleBtn.textContent = showInactive
+      ? `Ocultar dados de baja (${inactive.length})`
+      : `Mostrar dados de baja (${inactive.length})`;
+  } else {
+    toggleBtn.style.display = 'none';
+  }
+}
+
+function renderFullHistory() {
+  const list  = document.getElementById('full-history');
+  const items = state.recent_payments;
+  if (!items.length) {
+    list.innerHTML = `<div class="empty"><div class="icon">📋</div>Sin pagos registrados aún.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(p => {
+    const att = p.attendees && p.attendees.length
+      ? p.attendees.map(a => `<span class="h-avatar avatar ${a.color}" style="width:20px;height:20px;font-size:8px;display:inline-flex">${initials(a.name)}</span>`).join('')
+      : '';
+    return `
+      <div class="history-item">
+        <div class="h-avatar avatar ${p.color}">${initials(p.name)}</div>
+        <div class="h-info">
+          <div class="h-name">${p.name}</div>
+          <div class="h-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            ${formatDate(p.paid_at)}${p.note ? ' · ' + p.note : ''}
+            ${att ? '<span style="display:flex;gap:2px;margin-left:2px">' + att + '</span>' : ''}
+          </div>
+        </div>
+        <div class="h-right" style="display:flex;align-items:center;gap:10px">
+          <div>
+            <div class="h-amount">${formatEur(p.amount)}</div>
+            ${p.attendee_count ? `<div class="h-count">${p.attendee_count} personas</div>` : ''}
+          </div>
+          <button class="icon-btn del" title="Borrar pago" onclick="deletePayment(${p.id}, '${p.name}')">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Navegación ──────────────────────────────────────────────────────────────
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── Modal helpers ───────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Modal de pago: 3 pasos ──────────────────────────────────────────────────
+function openPayModal() {
+  // Resetear estado
+  payState = { step: 1, attendeeIds: new Set(), payerId: null, suggested: null };
+  renderStep1();
+  openModal('modal-pay');
+}
+
+function goStep(n) {
+  if (n === 2) {
+    if (payState.attendeeIds.size === 0) { showToast('Selecciona al menos una persona'); return; }
+    fetchSuggestion().then(() => showStep(2));
+  } else if (n === 3) {
+    if (!payState.payerId) { showToast('Elige quién paga'); return; }
+    showStep(3);
+    setTimeout(() => document.getElementById('pay-amount').focus(), 300);
+  } else {
+    showStep(n);
+  }
+}
+
+function showStep(n) {
+  payState.step = n;
+  [1, 2, 3].forEach(i => {
+    document.getElementById(`step-${i}`).style.display = i === n ? '' : 'none';
+  });
+}
+
+// Paso 1: grid de asistentes
+function renderStep1() {
+  const active = state.people.filter(p => p.active == 1);
+  const grid   = document.getElementById('attendee-grid');
+  grid.innerHTML = active.map(p => `
+    <div class="attendee-item ${payState.attendeeIds.has(p.id) ? 'selected' : ''}"
+         onclick="toggleAttendee(${p.id}, this)">
+      <div class="av-sm avatar ${p.color}">${initials(p.name)}</div>
+      <span class="av-name">${p.name}</span>
+      <span class="check">✓</span>
+    </div>
+  `).join('');
+  showStep(1);
+}
+
+function toggleAttendee(id, el) {
+  if (payState.attendeeIds.has(id)) {
+    payState.attendeeIds.delete(id);
+    el.classList.remove('selected');
+  } else {
+    payState.attendeeIds.add(id);
+    el.classList.add('selected');
+  }
+}
+
+// Paso 2: sugerencia + lista para cambiar
+async function fetchSuggestion() {
+  try {
+    const ids  = Array.from(payState.attendeeIds);
+    const data = await api('POST', 'suggest', { attendee_ids: ids });
+    payState.suggested = data.next_payer;
+    payState.payerId   = data.next_payer ? data.next_payer.id : null;
+  } catch(e) {
+    payState.suggested = null;
+  }
+  renderStep2();
+}
+
+function renderStep2() {
+  const ids        = Array.from(payState.attendeeIds);
+  const attendees  = state.people.filter(p => ids.includes(p.id) && p.active == 1);
+  const suggested  = payState.suggested;
+
+  // Sugerencia destacada
+  const sugBox = document.getElementById('payer-suggestion');
+  if (suggested) {
+    sugBox.innerHTML = `
+      <div class="payer-suggestion">
+        <div class="avatar ${suggested.color}" style="width:38px;height:38px;font-size:13px">${initials(suggested.name)}</div>
+        <div class="sug-info">
+          <div class="sug-name">${suggested.name}</div>
+          <div class="sug-reason">${suggested.times} ronda${suggested.times !== 1 ? 's' : ''} · ${formatEur(suggested.total)} en total</div>
+        </div>
+        <span class="sug-badge">Le toca</span>
+      </div>
+    `;
+  } else {
+    sugBox.innerHTML = '';
+  }
+
+  // Lista de alternativas (todos los asistentes)
+  const payerList = document.getElementById('payer-list');
+  payerList.innerHTML = attendees.map(p => {
+    const stats   = state.people.find(x => x.id === p.id);
+    const isSel   = payState.payerId === p.id;
+    return `
+      <div class="payer-option ${isSel ? 'selected' : ''}" onclick="selectPayer(${p.id}, this)">
+        <div class="avatar ${p.color}" style="width:32px;height:32px;font-size:11px">${initials(p.name)}</div>
+        <div class="p-name">${p.name}</div>
+        <div class="p-stats">${stats ? stats.times + ' rondas · ' + formatEur(stats.total) : ''}</div>
+        <div class="p-radio"></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectPayer(id, el) {
+  payState.payerId = id;
+  document.querySelectorAll('.payer-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  // Actualizar también el badge de sugerencia si cambió
+  const sugBox = document.getElementById('payer-suggestion');
+  if (payState.suggested && id !== payState.suggested.id) {
+    sugBox.style.opacity = '0.5';
+  } else {
+    sugBox.style.opacity = '1';
+  }
+}
+
+// Paso 3: confirmar pago
+async function submitPay() {
+  const amount = parseFloat(document.getElementById('pay-amount').value);
+  const note   = document.getElementById('pay-note').value.trim();
+
+  if (!amount || amount <= 0) {
+    document.getElementById('pay-amount').focus();
+    showToast('Introduce el importe de la ronda');
+    return;
+  }
+
+  try {
+    await api('POST', 'payments', {
+      person_id:    payState.payerId,
+      amount,
+      attendee_ids: Array.from(payState.attendeeIds),
+      note,
+    });
+    closeModal('modal-pay');
+    showToast('✓ Ronda registrada');
+    await loadData();
+  } catch(e) {
+    showToast('Error al guardar ⚠️');
+  }
+}
+
+// ── Modal añadir persona ────────────────────────────────────────────────────
+function openAddPersonModal() {
+  document.getElementById('new-person-name').value = '';
+  selectedColor = 'c-amber';
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('selected', d.dataset.color === 'c-amber'));
+  openModal('modal-add-person');
+  setTimeout(() => document.getElementById('new-person-name').focus(), 300);
+}
+
+function selectColor(el) {
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = el.dataset.color;
+}
+
+async function submitAddPerson() {
+  const name = document.getElementById('new-person-name').value.trim();
+  if (!name) { showToast('Escribe un nombre'); return; }
+  try {
+    await api('POST', 'people', { name, color: selectedColor });
+    closeModal('modal-add-person');
+    showToast(`✓ ${name} añadido/a`);
+    await loadData();
+  } catch(e) {
+    showToast('Error al añadir ⚠️');
+  }
+}
+
+// ── Acciones de personas ────────────────────────────────────────────────────
+async function deactivatePerson(id, name) {
+  if (!confirm(`¿Dar de baja a ${name}? Podrás reactivarlo/a después.`)) return;
+  try {
+    await api('DELETE', `people/${id}`);
+    showToast(`${name} dado/a de baja`);
+    await loadData();
+  } catch(e) { showToast('Error ⚠️'); }
+}
+
+async function reactivatePerson(id) {
+  try {
+    await api('PUT', `people/${id}`, { active: 1 });
+    showToast('✓ Reactivado/a');
+    await loadData();
+  } catch(e) { showToast('Error ⚠️'); }
+}
+
+// ── Borrar pago con contraseña ──────────────────────────────────────────────
+let pendingDeleteId   = null;
+let pendingDeleteName = null;
+
+function deletePayment(id, name) {
+  pendingDeleteId   = id;
+  pendingDeleteName = name;
+  document.getElementById('delete-password-input').value = '';
+  document.getElementById('delete-error').style.display  = 'none';
+  openModal('modal-delete');
+  setTimeout(() => document.getElementById('delete-password-input').focus(), 300);
+}
+
+async function confirmDeletePayment() {
+  const pwd = document.getElementById('delete-password-input').value;
+  if (pwd !== 'mrcoach') {
+    const err = document.getElementById('delete-error');
+    err.style.display = 'block';
+    document.getElementById('delete-password-input').value = '';
+    document.getElementById('delete-password-input').focus();
+    return;
+  }
+  try {
+    await api('DELETE', `payments/${pendingDeleteId}`);
+    closeModal('modal-delete');
+    showToast('Pago eliminado');
+    await loadData();
+  } catch(e) { showToast('Error al borrar ⚠️'); }
+}
+
+function toggleInactive() { showInactive = !showInactive; renderPeople(); }
+
+// ── Toast ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Cerrar modal al tocar el fondo ──────────────────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// ── Auto-refresh cada 60s ───────────────────────────────────────────────────
+setInterval(loadData, 60000);
+
+// ── Init ────────────────────────────────────────────────────────────────────
+loadData();
+
+// ── PWA Service Worker ──────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  setTimeout(() => {
+    showToast('💡 Añade esta app a tu pantalla de inicio');
+    const t = document.getElementById('toast');
+    t.style.cursor = 'pointer';
+    t.onclick = () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; t.onclick = null; t.style.cursor = ''; } };
+  }, 3000);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# ── Seguridad ─────────────────────────────────────────────────────────────
+# Bloquea acceso directo a la base de datos SQLite
+<Files "cafe.db">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Bloquea acceso a archivos sensibles
+<FilesMatch "\.(db|sqlite|sqlite3|sh|log)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# ── Headers de seguridad ───────────────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "no-referrer-when-downgrade"
+</IfModule>
+
+# ── Compresión GZIP ────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>
+
+# ── Cache estática ─────────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                  "access plus 1 week"
+    ExpiresByType application/javascript    "access plus 1 week"
+    ExpiresByType text/html                 "access plus 1 hour"
+</IfModule>
+
+# ── Directorio por defecto ─────────────────────────────────────────────────
+DirectoryIndex index.html
+
+# ── PHP settings (si tu hosting lo permite) ────────────────────────────────
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_value max_execution_time 10
+    php_value memory_limit 32M
+</IfModule>
