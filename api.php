@@ -70,43 +70,62 @@ function getDB(): PDO {
     return $db;
 }
 
-// ── Algoritmo de turno ──────────────────────────────────────────────────────
-// Solo evalúa a los asistentes de hoy.
-// Score = (veces_que_ha_pagado × importe_medio_global) + total_pagado_histórico
-// Menor score = le toca pagar. Desempate: menos veces pagado → alfabético.
-function calcNextPayer(PDO $db, array $candidateIds): ?array {
-    if (empty($candidateIds)) return null;
+// ── Balances per cápita ─────────────────────────────────────────────────────
+// Por cada pago con N asistentes: el pagador acumula +amount, cada asistente
+// (incluido el pagador) acumula −amount/N. Balance = pagado − consumido.
+// Los pagos legacy sin asistentes conocidos solo cuentan en 'times'.
+function calcBalances(PDO $db): array {
+    $balances = [];
+    foreach ($db->query("SELECT id FROM people")->fetchAll() as $p) {
+        $balances[(int)$p['id']] = ['times' => 0, 'paid' => 0.0, 'consumed' => 0.0];
+    }
 
-    $avgRound = (float)$db->query("SELECT COALESCE(AVG(amount), 5.0) AS avg FROM payments")->fetch()['avg'];
+    foreach ($db->query("SELECT person_id, amount, attendee_ids FROM payments")->fetchAll() as $pay) {
+        $personId = (int)$pay['person_id'];
+        $amount   = (float)$pay['amount'];
+
+        if (isset($balances[$personId])) $balances[$personId]['times'] += 1;
+
+        $attendees = json_decode($pay['attendee_ids'] ?? '[]', true);
+        if (!is_array($attendees) || empty($attendees)) continue;
+
+        $perPerson = $amount / count($attendees);
+        if (isset($balances[$personId])) $balances[$personId]['paid'] += $amount;
+        foreach ($attendees as $aid) {
+            $aid = (int)$aid;
+            if (isset($balances[$aid])) $balances[$aid]['consumed'] += $perPerson;
+        }
+    }
+
+    return $balances;
+}
+
+// ── Algoritmo de turno ──────────────────────────────────────────────────────
+// Entre los asistentes de hoy, el del balance más bajo (más en deuda) paga.
+// Desempate: menos veces pagado → alfabético.
+function calcNextPayer(PDO $db, array $candidateIds, array $stats): ?array {
+    if (empty($candidateIds)) return null;
 
     $placeholders = implode(',', array_fill(0, count($candidateIds), '?'));
     $stmt = $db->prepare("SELECT * FROM people WHERE id IN ($placeholders) AND active = 1");
     $stmt->execute($candidateIds);
     $people = $stmt->fetchAll();
-
     if (empty($people)) return null;
-
-    $statsStmt = $db->prepare("
-        SELECT COUNT(*) AS times, COALESCE(SUM(amount), 0) AS total
-        FROM payments WHERE person_id = ?
-    ");
 
     $scored = [];
     foreach ($people as $p) {
-        $statsStmt->execute([$p['id']]);
-        $s = $statsStmt->fetch();
-        $times = (int)$s['times'];
-        $total = (float)$s['total'];
+        $s = $stats[(int)$p['id']] ?? ['times' => 0, 'paid' => 0.0, 'consumed' => 0.0];
         $scored[] = array_merge($p, [
-            'times' => $times,
-            'total' => round($total, 2),
-            'score' => round(($times * $avgRound) + $total, 4),
+            'times'    => (int)$s['times'],
+            'total'    => round((float)$s['paid'], 2),
+            'consumed' => round((float)$s['consumed'], 2),
+            'balance'  => round((float)$s['paid'] - (float)$s['consumed'], 2),
         ]);
     }
 
     usort($scored, function($a, $b) {
-        if ($a['score'] !== $b['score']) return $a['score'] <=> $b['score'];
-        if ($a['times'] !== $b['times']) return $a['times'] <=> $b['times'];
+        if ($a['balance'] != $b['balance']) return $a['balance'] <=> $b['balance'];
+        if ($a['times']   != $b['times'])   return $a['times']   <=> $b['times'];
         return strcmp($a['name'], $b['name']);
     });
 
@@ -125,25 +144,17 @@ try {
     // ── GET /stats ───────────────────────────────────────────────────────────
     if ($method === 'GET' && $path === 'stats') {
         $people = $db->query("SELECT * FROM people ORDER BY active DESC, name ASC")->fetchAll();
-
-        $statsStmt = $db->prepare("
-            SELECT COUNT(*) AS times, COALESCE(SUM(amount),0) AS total, COALESCE(AVG(amount),0) AS avg_amount
-            FROM payments WHERE person_id = ?
-        ");
-        $avgRound = (float)$db->query("SELECT COALESCE(AVG(amount),5.0) AS avg FROM payments")->fetch()['avg'];
+        $stats  = calcBalances($db);
 
         $enriched = [];
         $nameMap  = [];
         foreach ($people as $p) {
-            $statsStmt->execute([$p['id']]);
-            $s = $statsStmt->fetch();
-            $times = (int)$s['times'];
-            $total = (float)$s['total'];
+            $s = $stats[(int)$p['id']] ?? ['times' => 0, 'paid' => 0.0, 'consumed' => 0.0];
             $row = array_merge($p, [
-                'times'      => $times,
-                'total'      => round($total, 2),
-                'avg_amount' => round((float)$s['avg_amount'], 2),
-                'score'      => round(($times * $avgRound) + $total, 4),
+                'times'    => (int)$s['times'],
+                'total'    => round((float)$s['paid'], 2),
+                'consumed' => round((float)$s['consumed'], 2),
+                'balance'  => round((float)$s['paid'] - (float)$s['consumed'], 2),
             ]);
             $enriched[] = $row;
             $nameMap[$p['id']] = ['name' => $p['name'], 'color' => $p['color']];
@@ -165,12 +176,13 @@ try {
         }
         unset($pay);
 
-        $totals = $db->query("SELECT COUNT(*) AS rounds, COALESCE(SUM(amount),0) AS total_spent FROM payments")->fetch();
+        $totals    = $db->query("SELECT COUNT(*) AS rounds, COALESCE(SUM(amount),0) AS total_spent FROM payments")->fetch();
         $activeIds = array_map(fn($p) => $p['id'], array_filter($enriched, fn($p) => $p['active'] == 1));
+        $avgRound  = (float)$db->query("SELECT COALESCE(AVG(amount),5.0) AS avg FROM payments")->fetch()['avg'];
 
         echo json_encode([
             'people'          => $enriched,
-            'next_payer'      => calcNextPayer($db, $activeIds),
+            'next_payer'      => calcNextPayer($db, $activeIds, $stats),
             'recent_payments' => $recentPayments,
             'avg_round'       => round($avgRound, 2),
             'rounds_total'    => (int)$totals['rounds'],
@@ -188,7 +200,8 @@ try {
             echo json_encode(['error' => 'Necesito al menos un asistente']);
             exit;
         }
-        echo json_encode(['next_payer' => calcNextPayer($db, $ids)]);
+        $stats = calcBalances($db);
+        echo json_encode(['next_payer' => calcNextPayer($db, $ids, $stats)]);
         exit;
     }
 
@@ -247,8 +260,8 @@ try {
         // El pagador siempre está entre los asistentes
         if (!in_array($personId, $attendeeIds)) $attendeeIds[] = $personId;
 
-        $stmt = $db->prepare("INSERT INTO payments (person_id, amount, attendee_ids, coffee_count, note) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$personId, $amount, json_encode(array_values($attendeeIds)), count($attendeeIds), $note ?: null]);
+        $stmt = $db->prepare("INSERT INTO payments (person_id, amount, attendee_ids, note) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$personId, $amount, json_encode(array_values($attendeeIds)), $note ?: null]);
         echo json_encode(['id' => (int)$db->lastInsertId(), 'ok' => true]);
         exit;
     }

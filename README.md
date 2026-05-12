@@ -90,13 +90,15 @@ En `index.html`, busca `café ☕` en la etiqueta `<title>` y `.topbar-title`.
 ### Añadir más personas con colores
 Los colores disponibles son: `c-amber`, `c-green`, `c-red`, `c-blue`, `c-purple`, `c-teal`
 
-### Cambiar el algoritmo de turnos
-En `api.php`, función `score`:
-```php
-$score = ($times * $avgRound) + $total;
-```
-- Si quieres priorizar solo el **número de veces**: usa solo `$times`
-- Si quieres priorizar solo el **importe total**: usa solo `$total`
+### Algoritmo de turnos (saldo per cápita)
+En `api.php`, función `calcBalances`:
+Por cada ronda de **X €** con **N asistentes**:
+- El pagador acumula `+X €` (lo puso)
+- Cada asistente (incluido el pagador) acumula `−X/N €` (su parte consumida)
+
+Para cada persona: `balance = pagado − consumido`. El del balance más bajo
+entre los asistentes de hoy es el que paga. Saldo negativo = debe al grupo,
+positivo = el grupo le debe.
 
 ---
 

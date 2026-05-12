@@ -1,6 +1,6 @@
 // ── Service Worker — Café PWA ───────────────────────────────────────────────
 // Versión: cambia este número para forzar actualización del caché en todos los usuarios
-const CACHE_VERSION = 'cafe-v1';
+const CACHE_VERSION = 'cafe-v2';
 
 // Archivos que se cachean al instalar (app shell — funciona sin internet)
 const SHELL_FILES = [
