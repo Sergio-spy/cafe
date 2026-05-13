@@ -52,17 +52,20 @@ function getDB(): PDO {
                 person_id    INTEGER NOT NULL REFERENCES people(id),
                 amount       REAL    NOT NULL,
                 attendee_ids TEXT    DEFAULT '[]',
+                coffee_count INTEGER,
                 paid_at      TEXT    NOT NULL DEFAULT (datetime('now')),
                 note         TEXT
             );
         ");
     } else {
-        // Tabla existente — añadir attendee_ids si no existe
+        // Tabla existente — añadir columnas que falten
         $existingCols = array_column($cols, 'name');
         if (!in_array('attendee_ids', $existingCols)) {
-            // Sin NOT NULL para compatibilidad con SQLite antiguo
             $db->exec("ALTER TABLE payments ADD COLUMN attendee_ids TEXT DEFAULT '[]'");
             $db->exec("UPDATE payments SET attendee_ids = '[]' WHERE attendee_ids IS NULL");
+        }
+        if (!in_array('coffee_count', $existingCols)) {
+            $db->exec("ALTER TABLE payments ADD COLUMN coffee_count INTEGER");
         }
     }
 
@@ -260,8 +263,8 @@ try {
         // El pagador siempre está entre los asistentes
         if (!in_array($personId, $attendeeIds)) $attendeeIds[] = $personId;
 
-        $stmt = $db->prepare("INSERT INTO payments (person_id, amount, attendee_ids, note) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$personId, $amount, json_encode(array_values($attendeeIds)), $note ?: null]);
+        $stmt = $db->prepare("INSERT INTO payments (person_id, amount, attendee_ids, coffee_count, note) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$personId, $amount, json_encode(array_values($attendeeIds)), count($attendeeIds), $note ?: null]);
         echo json_encode(['id' => (int)$db->lastInsertId(), 'ok' => true]);
         exit;
     }
